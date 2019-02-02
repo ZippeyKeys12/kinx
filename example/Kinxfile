@@ -1,0 +1,22 @@
+---
+root: ./pages
+title: Example Project
+author: Author Name
+description: Short description of site
+url: http://waz.up
+copyright: ©God 1969
+theme:
+  primary: ddddd
+# extensions:
+#   jinja:
+#     - jinja2.ext.do
+#     - jinja2.ext.loopcontrols
+---
+
+### Test Header
+* [Title](Link)
+  * [Subtitle](Sublink)
+  * [Subtitle](Sublink)
+  * [Subtitle](Sublink)
+  * [Subtitle](Sublink)
+* [Title2](Link2)
