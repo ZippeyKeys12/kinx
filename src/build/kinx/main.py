@@ -1,10 +1,12 @@
 """Site Builder
 """
 from os.path import join as path_join
+from typing import Dict, List, Tuple, Union
 
 from frontmatter import load as load_fm
 from jinja2 import Environment, FileSystemLoader
 from lxml import etree
+from lxml.etree import Element
 from lxml.html import HTMLParser
 from mistune import Markdown
 
@@ -13,6 +15,8 @@ from .renderer import Renderer
 
 
 class Builder:
+    DEFAULT_HEADER = ('DEFAULT', 1)
+
     def __init__(self, path: str, dev: bool):
         self.path = path
         self.dev = dev
@@ -42,22 +46,21 @@ class Builder:
 
         project_dir: dict = {}
 
-        current_header: list = []
+        self.headers: List[Union[Tuple[str, int], str]] = [self.DEFAULT_HEADER]
         for i in etree.fromstring(self.markdown(
                 kinxfile.content), HTMLParser())[0]:
             if i.tag == "ul":
-                project_dir[current_header[-1]].extend(self.__get_links_md(i))
+                project_dir[self.headers[-1]].extend(self.__get_links_md(i))
             elif (i.tag[:1] == "h" and i.tag[1:] in
                   (str(j) for j in range(1, 7))):
-                current_header.append((i.text, i.tag[1:]))
-                project_dir[current_header[-1]] = []
+                self.headers.append((i.text, i.tag[1:]))
+                project_dir[self.headers[-1]] = []
             else:
-                project_dir[current_header[-1]].append(i.tag)
+                project_dir[self.headers[-1]].append(i.tag)
                 if i.tag not in ["hr"]:
                     print(
                         "{} is not read in Kinxfile".format(
                             etree.tostring(i)))
-        del current_header
 
         self.kx: dict = {}
         for i in ["title", "author", "description",
@@ -70,22 +73,20 @@ class Builder:
 
         print(self.kx)
 
-        self.pages: dict = {}
+        self.pages: Dict[str, str] = {}
 
-    def __get_links_md(self, element):
-        sets = []
+    def __get_links_md(self, element: Element):
+        sets: List = []
 
+        t_type = Tuple[str, str]
         for i in element:
-            tags = []
+            tags: List[Union[t_type, List[t_type]]] = []
 
             for k in i:
                 if k.tag == "ul":
                     n = self.__get_links_md(k)
 
-                    if len(n) > 1:
-                        tags.append(n)
-                    else:
-                        tags.extend(n)
+                    tags.extend(n)
                 else:
                     tags.append((k.text, k.get("href")))
             sets.append(tags)
@@ -107,8 +108,6 @@ class Builder:
                     for l in k:
                         link = l[1]
                         self.pages[link] = self.__render_page(link)
-
-        print(self.pages)
 
         # if dev:
         #     call("yarn", "start")

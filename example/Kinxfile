@@ -16,5 +16,6 @@ extensions:
 ### Test Header
 * [hello](hello.md)
   * [TEST1](TEST1.md)
+  * [TEST2](TEST2.md)
 * [what](what.md)
 ----
