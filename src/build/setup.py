@@ -1,6 +1,6 @@
 from json import load
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 with open("package.json", "r") as f:
     info = load(f)
@@ -23,7 +23,8 @@ setup(
     python_requires=">=3.6.0",
     setup_requires=["pipenv"],
     packages=find_packages(),
-    install_requires=["cython", "mistune", "python-frontmatter", "jinja2", "pyyaml"],
+    install_requires=["cython", "mistune",
+                      "python-frontmatter", "jinja2", "pyyaml"],
     test_requires=["pytest"],
     include_package_data=True,
     package_data={"templates": "*.md"},

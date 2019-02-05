@@ -1,8 +1,6 @@
-from collections import OrderedDict
-from json import load as load_json
+"""Site Builder
+"""
 from os.path import join as path_join
-from subprocess import call
-from typing import Dict, Tuple, Union
 
 from frontmatter import load as load_fm
 from jinja2 import Environment, FileSystemLoader
@@ -15,8 +13,6 @@ from .renderer import Renderer
 
 
 class Builder:
-    head_split = "<[$]>"
-
     def __init__(self, path: str, dev: bool):
         self.path = path
         self.dev = dev
@@ -30,45 +26,51 @@ class Builder:
         )
 
         try:
-            jinja_extensions = kinxfile["extensions"]["jinja"]
-        except:
-            jinja_extensions = ()
-        try:
+            try:
+                jinja_extensions = kinxfile["extensions"]["jinja"]
+            except KeyError:
+                jinja_extensions = ()
             self.env = Environment(
                 extensions=jinja_extensions,
+                autoescape=True,
                 loader=FileSystemLoader(self.__get_path(kinxfile["root"])),
             )
-        except:
+            del jinja_extensions
+        except KeyError:
             print("Unexpected error: 'root' key not found in Kinxfile")
             raise
-        del jinja_extensions
 
-        project_dir = {}
+        project_dir: dict = {}
 
-        current_header = ()
-        for i in etree.fromstring(self.markdown(kinxfile.content), HTMLParser())[0]:
+        current_header: list = []
+        for i in etree.fromstring(self.markdown(
+                kinxfile.content), HTMLParser())[0]:
             if i.tag == "ul":
-                if current_header in project_dir:
-                    project_dir[current_header].extend(self.__get_links_md(i))
-                else:
-                    project_dir[current_header] = self.__get_links_md(i)
-            elif i.tag[:1] == "h" and i.tag[1:] in (str(j) for j in range(1, 7)):
-                current_header = (i.text, i.tag[1:])
+                project_dir[current_header[-1]].extend(self.__get_links_md(i))
+            elif (i.tag[:1] == "h" and i.tag[1:] in
+                  (str(j) for j in range(1, 7))):
+                current_header.append((i.text, i.tag[1:]))
+                project_dir[current_header[-1]] = []
             else:
-                project_dir[current_header].append(i.tag)
+                project_dir[current_header[-1]].append(i.tag)
                 if i.tag not in ["hr"]:
-                    print("{} is not read in Kinxfile".format(etree.tostring(i)))
+                    print(
+                        "{} is not read in Kinxfile".format(
+                            etree.tostring(i)))
         del current_header
 
-        self.kinxfile = {}
-        for i in ["title", "author", "description", "url", "copyright", "theme"]:
-            self.kinxfile[i] = kinxfile[i]
+        self.kx: dict = {}
+        for i in ["title", "author", "description",
+                  "url", "copyright", "theme"]:
+            self.kx[i] = kinxfile[i]
         del kinxfile
 
-        self.kinxfile["content"] = OrderedDict(project_dir)
+        self.kx["content"] = (project_dir)
         del project_dir
 
-        print(self.kinxfile)
+        print(self.kx)
+
+        self.pages: dict = {}
 
     def __get_links_md(self, element):
         sets = []
@@ -94,9 +96,25 @@ class Builder:
         return path_join(self.path, path_to)
 
     def build(self):
-        pass
+        kxc = self.kx["content"]
+        for i in kxc:
+            for j in kxc[i]:
+                if not isinstance(j, list):
+                    continue
+                link = j[0][1]
+                self.pages[link] = self.__render_page(link)
+                for k in j[1:]:
+                    for l in k:
+                        link = l[1]
+                        self.pages[link] = self.__render_page(link)
+
+        print(self.pages)
 
         # if dev:
         #     call("yarn", "start")
         # else:
         #     call("yarn", "build")
+
+    def __render_page(self, path):
+        return self.markdown(self.env.get_template(path).render(
+            {j: self.kx[j] for j in self.kx if j not in ["content"]}))
