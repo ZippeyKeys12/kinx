@@ -75,21 +75,23 @@ class Builder:
 
         self.pages: Dict[str, str] = {}
 
-    def __get_links_md(self, element: Element):
-        sets: List = []
+    def __get_links_md(self, element: Element) -> List[Tuple[str, str]]:
+        s_type = Tuple[str, str]
+        sets: List[s_type] = []
 
-        t_type = Tuple[str, str]
         for i in element:
-            tags: List[Union[t_type, List[t_type]]] = []
+            tags: list = []
 
             for k in i:
+                n: Union[s_type, List[s_type]]
                 if k.tag == "ul":
                     n = self.__get_links_md(k)
-
-                    tags.extend(n)
                 else:
-                    tags.append((k.text, k.get("href")))
-            sets.append(tags)
+                    n = (k.text, k.get("href"))
+
+                tags.append(n)
+
+            sets.extend(tags)
 
         return sets
 
@@ -105,9 +107,7 @@ class Builder:
                 link = j[0][1]
                 self.pages[link] = self.__render_page(link)
                 for k in j[1:]:
-                    for l in k:
-                        link = l[1]
-                        self.pages[link] = self.__render_page(link)
+                    self.pages[k[0]] = self.__render_page(k[1])
 
         # if dev:
         #     call("yarn", "start")
