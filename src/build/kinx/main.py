@@ -15,7 +15,7 @@ from .renderer import Renderer
 
 
 class Builder:
-    DEFAULT_HEADER = ('DEFAULT', 1)
+    DEFAULT_HEADER = ('DEFAULT', 0)
 
     def __init__(self, path: str, dev: bool):
         self.path = path
